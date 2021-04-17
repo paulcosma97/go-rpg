@@ -12,7 +12,7 @@ import (
 type Client struct {
 	Id            string
 	server        *Server
-	Connection    func() *Connection
+	Connection    *Connection
 	ClientMessage chan *cmsg.Message
 	ServerMessage chan *servmsg.Message
 	closed        bool
@@ -24,7 +24,7 @@ func (c *Client) Close() {
 	}
 
 	c.closed = true
-	conn := c.Connection()
+	conn := c.Connection
 	conn.Close()
 	delete(c.server.Clients, conn)
 	close(c.ClientMessage)
@@ -39,12 +39,10 @@ func (c *Client) Close() {
 
 func NewClient(s *Server, conn *Connection) *Client {
 	client := &Client{
-		Connection: func() *Connection {
-			return conn
-		},
+		Connection:    conn,
 		server:        s,
-		ClientMessage: make(chan *cmsg.Message, 100),
-		ServerMessage: make(chan *servmsg.Message, 100),
+		ClientMessage: make(chan *cmsg.Message),
+		ServerMessage: make(chan *servmsg.Message),
 		Id:            uuid.NewString(),
 		closed:        false,
 	}
@@ -58,6 +56,6 @@ func NewClient(s *Server, conn *Connection) *Client {
 }
 
 func (c *Client) ResetDeadlines() {
-	c.Connection().SetReadDeadline(time.Now().Add(15 * time.Second))
-	c.Connection().SetWriteDeadline(time.Now().Add(15 * time.Second))
+	c.Connection.SetReadDeadline(time.Now().Add(15 * time.Second))
+	c.Connection.SetWriteDeadline(time.Now().Add(15 * time.Second))
 }

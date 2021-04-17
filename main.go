@@ -3,6 +3,7 @@ package main
 import (
 	srv "game/src/server"
 	"game/src/service"
+	_ "net/http/pprof"
 )
 
 func main() {

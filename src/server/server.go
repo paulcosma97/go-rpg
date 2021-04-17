@@ -24,11 +24,13 @@ type Server struct {
 func New() *Server {
 	return &Server{
 		Clients:   make(map[*Connection]*Client),
-		Broadcast: make(chan *servmsg.Message, 100),
+		Broadcast: make(chan *servmsg.Message),
 		Upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
 		},
 	}
 }
@@ -51,18 +53,20 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&m)
 
 		if client.closed {
-			return
+			break
 		}
 
 		if err != nil {
 			log.Printf("error: %v", err)
 			client.Close()
-			return
+			break
 		}
 
 		client.ClientMessage <- &m
 		client.ResetDeadlines()
 	}
+
+	log.Printf(`client loop finished`)
 }
 
 func (s *Server) exhaustClientMessages(c *Client) {
@@ -83,9 +87,9 @@ func (s *Server) exhaustClientMessages(c *Client) {
 
 func (s *Server) exhaustServerMessagesForClient(c *Client) {
 	for m := range c.ServerMessage {
-		err := c.Connection().WriteJSON(m)
+		err := c.Connection.WriteJSON(m)
 		if err != nil {
-			log.Printf(`Could not respond to client %v. Closing connection.`, c.Connection().RemoteAddr())
+			log.Printf(`Could not respond to client %v. Closing connection.`, c.Connection.RemoteAddr())
 			return
 		}
 	}

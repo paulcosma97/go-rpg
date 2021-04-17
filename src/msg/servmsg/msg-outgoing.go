@@ -5,7 +5,7 @@ const (
 )
 
 type WelcomePayload struct {
-	A string `json:"a"`
+	Id string `json:"id"`
 }
 
 func Welcome(payload WelcomePayload) Message {
