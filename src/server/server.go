@@ -45,16 +45,6 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	go s.exhaustClientMessages(client)
 	go s.exhaustServerMessagesForClient(client)
 
-	go func() {
-		for !client.closed {
-			time.Sleep(10 * time.Second)
-
-			if err != nil {
-				client.Close()
-			}
-		}
-	}()
-
 	for !client.closed {
 
 		var m cmsg.Message
