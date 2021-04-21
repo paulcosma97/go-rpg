@@ -1,16 +1,44 @@
 package servmsg
 
+import tgame "game/src/game/types"
+
 const (
-	TWelcome = `[Server] Welcome`
+	TWelcome     = `[Server] Welcome`
+	TJoinMatch   = `[Server] Join Match`
+	TMatchUpdate = `[Server] Join Match`
 )
 
-type WelcomePayload struct {
-	Id string `json:"id"`
+func Welcome(cId string) *Message {
+	return &Message{
+		Kind:    TWelcome,
+		Payload: cId,
+	}
 }
 
-func Welcome(payload WelcomePayload) Message {
-	return Message{
-		Kind:    TWelcome,
-		Payload: payload,
+type PlayerPayload struct {
+	Id          string          `json:"id"`
+	DisplayName string          `json:"displayName"`
+	Character   tgame.Character `json:"character"`
+}
+
+type MatchPayload struct {
+	Id       string         `json:"id"`
+	Player1  *PlayerPayload `json:"player1"`
+	Player2  *PlayerPayload `json:"player2"`
+	Turn     *string        `json:"turn"`
+	NextTurn *string        `json:"nextTurn"`
+}
+
+func JoinMatch(m MatchPayload) *Message {
+	return &Message{
+		Kind:    TJoinMatch,
+		Payload: m,
+	}
+}
+
+func MatchUpdate(m MatchPayload) *Message {
+	return &Message{
+		Kind:    TMatchUpdate,
+		Payload: m,
 	}
 }

@@ -1,20 +1,21 @@
 package cmsg
 
 const (
-	TConnect = `[Client] Connect`
-	TPing = `[Client] Ping`
+	// Not actually sent by the client, but simulated
+	TConnect    = `[Client] Connect`
+	TPing       = `[Client] Ping`
+	TSetProfile = `[Client] Set Profile`
+	TCreateMatch = `[Client] Create Match`
+	TJoinMatch = `[Client] Join Match`
+	TLeaveMatch = `[Client] Leave Match`
+
 )
 
 type EmptyMsg struct{}
 
-func Ping() *Message {
-	return &Message{
-		Kind: TPing,
-	}
+type SetProfilePayload struct {
+	DisplayName string `json:"displayName"`
 }
 
-func Connect() *Message {
-	return &Message{
-		Kind: TConnect,
-	}
-}
+type JoinMatchPayload = string
+type LeaveMatchPayload = string

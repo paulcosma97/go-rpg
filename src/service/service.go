@@ -1,17 +1,20 @@
 package service
 
 import (
+	"game/src/game/match"
 	srv "game/src/server"
 	"log"
 )
 
 type GameService struct {
-	server *srv.Server
+	server       *srv.Server
+	matchManager *match.MatchManager
 }
 
 func New(server *srv.Server) *GameService {
 	g := &GameService{
-		server: server,
+		server:       server,
+		matchManager: match.New(),
 	}
 
 	return g

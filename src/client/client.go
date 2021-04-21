@@ -1,4 +1,4 @@
-package srv
+package client
 
 import (
 	"game/src/msg/cmsg"
@@ -7,14 +7,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
+
+type ClientProfile struct {
+	DisplayName string
+}
 
 type Client struct {
 	Id            string
-	server        *Server
-	Connection    *Connection
+	Connection    *websocket.Conn
 	ClientMessage chan *cmsg.Message
 	ServerMessage chan *servmsg.Message
+	Profile       *ClientProfile
 	closed        bool
 }
 
@@ -26,10 +31,8 @@ func (c *Client) Close() {
 	c.closed = true
 	conn := c.Connection
 	conn.Close()
-	delete(c.server.Clients, conn)
 	close(c.ClientMessage)
 	close(c.ServerMessage)
-	c.server = nil
 	c.Connection = nil
 	c.ClientMessage = nil
 	c.ServerMessage = nil
@@ -37,18 +40,22 @@ func (c *Client) Close() {
 	log.Printf(`Client %v has been disconnected.`, c.Id)
 }
 
-func NewClient(s *Server, conn *Connection) *Client {
+func (c *Client) IsClosed() bool {
+	return c.closed
+}
+
+func New(conn *websocket.Conn) *Client {
 	client := &Client{
 		Connection:    conn,
-		server:        s,
-		ClientMessage: make(chan *cmsg.Message),
-		ServerMessage: make(chan *servmsg.Message),
+		ClientMessage: make(chan *cmsg.Message, 100),
+		ServerMessage: make(chan *servmsg.Message, 100),
 		Id:            uuid.NewString(),
 		closed:        false,
+		Profile:       &ClientProfile{},
 	}
 
 	go func() {
-		client.ClientMessage <- cmsg.Connect()
+		client.ClientMessage <- &cmsg.Message{Kind: cmsg.TConnect}
 	}()
 
 	client.ResetDeadlines()
