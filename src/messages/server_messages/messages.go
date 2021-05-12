@@ -1,6 +1,8 @@
-package servmsg
+package smsg
 
-import tgame "game/src/game/types"
+import (
+	"game/src/types"
+)
 
 const (
 	TWelcome     = `[Server] Welcome`
@@ -16,9 +18,9 @@ func Welcome(cId string) *Message {
 }
 
 type PlayerPayload struct {
-	Id          string          `json:"id"`
-	DisplayName string          `json:"displayName"`
-	Character   tgame.Character `json:"character"`
+	Id          string             `json:"id"`
+	DisplayName string             `json:"displayName"`
+	Characters  []*types.Character `json:"characters"`
 }
 
 type MatchPayload struct {

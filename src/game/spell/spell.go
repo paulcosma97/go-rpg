@@ -1,23 +1,21 @@
 package spell
 
 import (
-	"game/src/game/spell/effect"
-	tgame "game/src/game/types"
+	"game/src/types"
 )
 
 type Spell struct {
-	Name           string
-	Mana           string
-	Effects        []effect.Effect
-	MinDamage      uint16
-	MaxDamage      uint16
-	CritRate       float32
-	CritMultiplier float32
-	HitChance      float32
-	OnCast         func(caster *tgame.Character, e *effect.Effect, target *tgame.Character)
+	Name        string
+	Effects     []*types.Effect
+	MinDamage   uint16
+	MaxDamage   uint16
+	Cooldown    uint8
+	MaxCooldown uint8
+	DamageType  *types.DamageType
+	OnCast      func(caster *types.Character, target *types.Character)
 }
 
-func (x *Spell) GetName() string {
+func (x *Spell) Name() string {
 	return x.Name
 }
 
@@ -25,23 +23,15 @@ func (x *Spell) SetName(v string) {
 	x.Name = v
 }
 
-func (x *Spell) GetMana() string {
-	return x.Mana
-}
-
-func (x *Spell) SetMana(v string) {
-	x.Mana = v
-}
-
-func (x *Spell) GetEffects() []effect.Effect {
+func (x *Spell) Effects() []*types.Effect {
 	return x.Effects
 }
 
-func (x *Spell) SetEffects(v []effect.Effect) {
+func (x *Spell) SetEffects(v []*types.Effect) {
 	x.Effects = v
 }
 
-func (x *Spell) GetMinDamage() uint16 {
+func (x *Spell) MinDamage() uint16 {
 	return x.MinDamage
 }
 
@@ -49,7 +39,7 @@ func (x *Spell) SetMinDamage(v uint16) {
 	x.MinDamage = v
 }
 
-func (x *Spell) GetMaxDamage() uint16 {
+func (x *Spell) MaxDamage() uint16 {
 	return x.MaxDamage
 }
 
@@ -57,26 +47,26 @@ func (x *Spell) SetMaxDamage(v uint16) {
 	x.MaxDamage = v
 }
 
-func (x *Spell) GetCritRate() float32 {
-	return x.CritRate
+func (x *Spell) DamageType() *types.DamageType {
+	return x.DamageType
 }
 
-func (x *Spell) SetCritRate(v float32) {
-	x.CritRate = v
+func (x *Spell) SetDamaype(v *types.DamageType) {
+	x.DamageType = v
 }
 
-func (x *Spell) GetCritMultiplier() float32 {
-	return x.CritMultiplier
+func (x *Spell) Cooldown() uint8 {
+	return x.Cooldown
 }
 
-func (x *Spell) SetCritMultiplier(v float32) {
-	x.CritMultiplier = v
+func (x *Spell) SetCooldown(v uint8) {
+	x.Cooldown = v
 }
 
-func (x *Spell) GetHitChance() float32 {
-	return x.HitChance
+func (x *Spell) MaxCooldown() uint8 {
+	return x.MaxCooldown
 }
 
-func (x *Spell) SetHitChance(v float32) {
-	x.HitChance = v
+func (x *Spell) SetMaxCooldown(v uint8) {
+	x.MaxCooldown = v
 }

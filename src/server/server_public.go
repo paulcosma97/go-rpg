@@ -2,10 +2,8 @@ package srv
 
 import (
 	"fmt"
-	"game/src/client"
-	"game/src/client/cmap"
-	"game/src/msg/cmsg"
-	"game/src/msg/servmsg"
+	cmap "game/src/client/concurrent_map"
+	"game/src/types"
 	"log"
 	"net/http"
 
@@ -14,15 +12,15 @@ import (
 
 type Server struct {
 	Clients       *cmap.ConcurrentClientMap
-	Broadcast     chan *servmsg.Message
+	Broadcast     chan *types.Message
 	Upgrader      *websocket.Upgrader
-	cmsgToHandler func(c *client.Client, m cmsg.Message) error
+	cmsgToHandler func(c *types.GameConnection, m types.Message) error
 }
 
 func New() *Server {
 	return &Server{
 		Clients:   cmap.New(),
-		Broadcast: make(chan *servmsg.Message),
+		Broadcast: make(chan *types.Message),
 		Upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
@@ -33,7 +31,7 @@ func New() *Server {
 	}
 }
 
-func (s *Server) Serve(addr, port string, cmsgToHandler func(c *client.Client, m cmsg.Message) error) {
+func (s *Server) Serve(addr, port string, cmsgToHandler func(c *types.GameConnection, m types.Message) error) {
 	completeAddr := fmt.Sprintf(`%s:%s`, addr, port)
 
 	s.cmsgToHandler = cmsgToHandler

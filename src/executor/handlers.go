@@ -3,15 +3,15 @@ package service
 import (
 	"errors"
 	"fmt"
-	"game/src/client"
-	"game/src/msg/cmsg"
-	"game/src/msg/servmsg"
+	cmsg "game/src/messages/client_messages"
+	smsg "game/src/messages/server_messages"
+	"game/src/types"
 	"log"
 )
 
-func send(c *client.Client, msg *servmsg.Message) {
+func send(c types.GameConnection, msg *types.Message) {
 	go func() {
-		c.ServerMessage <- msg
+		c.WriteMessage(msg)
 	}()
 }
 
@@ -25,34 +25,35 @@ func indexOf(arr []interface{}, item interface{}) (int, error) {
 	return 0, errors.New(fmt.Sprintf(`Could not find element %v in array %v.`, item, arr))
 }
 
-func (g *GameService) OnPing(c *client.Client) error {
+func (g *GameService) OnPing(c types.GameConnection) error {
 	return nil
 }
 
-func (g *GameService) onConnect(c *client.Client) error {
-	log.Printf(`A new client has just connected! { Id '%v', Addr '%v' }`, c.Id, c.Connection.RemoteAddr())
+func (g *GameService) onConnect(c types.GameConnection) error {
+	log.Printf(`A new client has just connected! { Id '%v', Addr '%v' }`, c.Id, c.WebSocket().RemoteAddr())
 
-	send(c, servmsg.Welcome(c.Id))
+	msg := *smsg.Welcome(c.Id())
+	send(c, msg)
 
 	return nil
 }
 
-func (g *GameService) onSetProfile(c *client.Client, p cmsg.SetProfilePayload) error {
+func (g *GameService) onSetProfile(c types.GameConnection, p cmsg.SetProfilePayload) error {
 	c.Profile.DisplayName = p.DisplayName
 	return nil
 }
 
-func (g *GameService) onCreateMatch(c *client.Client) error {
+func (g *GameService) onCreateMatch(c types.GameConnection) error {
 	m, err := g.matchManager.CreateMatch(c)
 	if err != nil {
 		return err
 	}
 
-	payload := servmsg.MatchPayload{
+	payload := smsg.MatchPayload{
 		Id: m.Id,
-		Player1: &servmsg.PlayerPayload{
+		Player1: &smsg.PlayerPayload{
 			Id:          c.Id,
-			Character:   m.Players[0].Character,
+			Characters:  m.Players[0].Characters,
 			DisplayName: c.Profile.DisplayName,
 		},
 		Player2:  nil,
@@ -60,12 +61,12 @@ func (g *GameService) onCreateMatch(c *client.Client) error {
 		NextTurn: nil,
 	}
 
-	send(c, servmsg.JoinMatch(payload))
+	send(c, smsg.JoinMatch(payload))
 
 	return nil
 }
 
-func (g *GameService) onJoinMatch(c *client.Client, mId string) error {
+func (g *GameService) onJoinMatch(c types.GameConnection, mId string) error {
 	m, _, err := g.matchManager.JoinMatch(c, mId)
 	if err != nil {
 		return err
@@ -84,11 +85,16 @@ func (g *GameService) onJoinMatch(c *client.Client, mId string) error {
 		log.Printf(`Could not assign second turn to a random player in match %v.`, m.Id)
 	}
 
-	send(c, servmsg.JoinMatch(m.ToOutbound()))
+	send(c, smsg.JoinMatch(m.ToOutbound()))
 
 	for _, player := range m.Players {
-		send(player.Client, servmsg.MatchUpdate(m.ToOutbound()))
+		send(player.Client, smsg.MatchUpdate(m.ToOutbound()))
 	}
+
+	return nil
+}
+
+func (g *GameService) onChooseCharacters(c types.GameConnection, cIds []uint8) error {
 
 	return nil
 }

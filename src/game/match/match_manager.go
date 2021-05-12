@@ -3,7 +3,7 @@ package match
 import (
 	"errors"
 	"fmt"
-	"game/src/client"
+	"game/src/types"
 	"log"
 
 	"github.com/google/uuid"
@@ -19,9 +19,9 @@ func New() *MatchManager {
 	}
 }
 
-func (mm *MatchManager) CreateMatch(c *client.Client) (*Match, error) {
-	if found, _, err := mm.FindMatchByClient(c); err == nil {
-		log.Printf(`Client %v attempted to create match while being part of match %v.`, c.Id, found.Id)
+func (mm *MatchManager) CreateMatch(c types.GameConnection) (*Match, error) {
+	if found, _, err := mm.FindMatchByClient(&c); err == nil {
+		log.Printf(`Client %v attempted to create match while being part of match %v.`, c.Id(), found.Id)
 		return nil, errors.New(`You are already in a match.`)
 	}
 
@@ -31,16 +31,16 @@ func (mm *MatchManager) CreateMatch(c *client.Client) (*Match, error) {
 	}
 
 	m.Players[0] = &Player{
-		Client:    c,
-		Character: nil,
+		Client:     c,
+		Characters: make([]*types.Character, 3),
 	}
 
 	mm.Matches = append(mm.Matches, m)
 	return m, nil
 }
 
-func (mm *MatchManager) JoinMatch(c *client.Client, id string) (*Match, uint8, error) {
-	m, _, err := mm.FindMatchByClient(c)
+func (mm *MatchManager) JoinMatch(c types.GameConnection, id string) (*Match, uint8, error) {
+	m, _, err := mm.FindMatchByClient(&c)
 
 	if err == nil {
 		log.Printf(`Client %v attempted to join match %v while being part of match %v.`, c.Id, id, m.Id)
@@ -48,8 +48,8 @@ func (mm *MatchManager) JoinMatch(c *client.Client, id string) (*Match, uint8, e
 	}
 
 	p := &Player{
-		Client:    c,
-		Character: nil,
+		Client:     c,
+		Characters: make([]*types.Character, 3),
 	}
 
 	var idx uint8 = 0
@@ -58,7 +58,7 @@ func (mm *MatchManager) JoinMatch(c *client.Client, id string) (*Match, uint8, e
 	} else if m.Players[1] == nil {
 		idx = 1
 	} else {
-		log.Printf(`Client %v attempted to join full match %v.`, c.Id, m.Id)
+		log.Printf(`Client %v attempted to join full match %v.`, c.Id(), m.Id)
 		return nil, 0, errors.New(`Match is already full.`)
 	}
 
@@ -69,13 +69,13 @@ func (mm *MatchManager) JoinMatch(c *client.Client, id string) (*Match, uint8, e
 
 func (mm *MatchManager) DestroyMatch(m *Match) {
 	if m.Players[0] != nil {
-		m.Players[0].Character = nil
+		m.Players[0].Characters = nil
 		m.Players[0].Client = nil
 		m.Players[0] = nil
 	}
 
 	if m.Players[1] != nil {
-		m.Players[1].Character = nil
+		m.Players[1].Characters = nil
 		m.Players[1].Client = nil
 		m.Players[1] = nil
 	}
@@ -90,7 +90,7 @@ func (mm *MatchManager) DestroyMatch(m *Match) {
 	mm.Matches = filteredMatches
 }
 
-func (mm *MatchManager) LeaveMatch(c *client.Client) error {
+func (mm *MatchManager) LeaveMatch(c *types.GameConnection) error {
 	m, pIdx, err := mm.FindMatchByClient(c)
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ func (mm *MatchManager) LeaveMatch(c *client.Client) error {
 	return nil
 }
 
-func (mm *MatchManager) FindMatchByClient(c *client.Client) (*Match, uint8, error) {
+func (mm *MatchManager) FindMatchByClient(c *types.GameConnection) (*Match, uint8, error) {
 	var m *Match = nil
 
 	for _, match := range mm.Matches {

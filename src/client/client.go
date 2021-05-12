@@ -1,8 +1,8 @@
 package client
 
 import (
-	"game/src/msg/cmsg"
-	"game/src/msg/servmsg"
+	cmsg "game/src/messages/client_messages"
+	"game/src/types"
 	"log"
 	"time"
 
@@ -10,16 +10,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ClientProfile struct {
-	DisplayName string
-}
-
 type Client struct {
-	Id            string
-	Connection    *websocket.Conn
-	ClientMessage chan *cmsg.Message
-	ServerMessage chan *servmsg.Message
-	Profile       *ClientProfile
+	id            string
+	connection    *websocket.Conn
+	clientMessage chan *types.Message
+	serverMessage chan *types.Message
 	closed        bool
 }
 
@@ -29,33 +24,53 @@ func (c *Client) Close() {
 	}
 
 	c.closed = true
-	conn := c.Connection
+	conn := c.connection
 	conn.Close()
-	close(c.ClientMessage)
-	close(c.ServerMessage)
-	c.Connection = nil
-	c.ClientMessage = nil
-	c.ServerMessage = nil
+	close(c.clientMessage)
+	close(c.serverMessage)
+	c.connection = nil
+	c.clientMessage = nil
+	c.serverMessage = nil
 
-	log.Printf(`Client %v has been disconnected.`, c.Id)
+	log.Printf(`Client %v has been disconnected.`, c.id)
+}
+
+func (c *Client) Id() string {
+	return c.id
+}
+
+func (c *Client) WebSocket() *websocket.Conn {
+	return c.connection
+}
+
+func (c *Client) WriteMessage(m *types.Message) {
+	c.serverMessage <- m
+}
+
+func (c *Client) ReadChannel() chan *types.Message {
+	return c.clientMessage
+}
+
+func (c *Client) WriteChannel() chan *types.Message {
+	return c.serverMessage
 }
 
 func (c *Client) IsClosed() bool {
 	return c.closed
 }
 
-func New(conn *websocket.Conn) *Client {
+func New(conn *websocket.Conn) *types.GameConnection {
 	client := &Client{
-		Connection:    conn,
-		ClientMessage: make(chan *cmsg.Message, 100),
-		ServerMessage: make(chan *servmsg.Message, 100),
-		Id:            uuid.NewString(),
+		connection:    conn,
+		clientMessage: make(chan *types.Message, 100),
+		serverMessage: make(chan *types.Message, 100),
+		id:            uuid.NewString(),
 		closed:        false,
-		Profile:       &ClientProfile{},
 	}
 
 	go func() {
-		client.ClientMessage <- &cmsg.Message{Kind: cmsg.TConnect}
+		msg := (&cmsg.MessageIn{Kind: cmsg.TConnect}).Inbound()
+		client.clientMessage <- &msg
 	}()
 
 	client.ResetDeadlines()
@@ -63,6 +78,6 @@ func New(conn *websocket.Conn) *Client {
 }
 
 func (c *Client) ResetDeadlines() {
-	c.Connection.SetReadDeadline(time.Now().Add(15 * time.Second))
-	c.Connection.SetWriteDeadline(time.Now().Add(15 * time.Second))
+	c.connection.SetReadDeadline(time.Now().Add(15 * time.Second))
+	c.connection.SetWriteDeadline(time.Now().Add(15 * time.Second))
 }

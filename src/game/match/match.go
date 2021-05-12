@@ -3,22 +3,22 @@ package match
 import (
 	"errors"
 	"game/src/client"
-	char "game/src/game/character"
-	"game/src/msg/servmsg"
+	smsg "game/src/messages/server_messages"
+	"game/src/types"
 	"log"
 	"math"
 	"math/rand"
 )
 
 type Player struct {
-	Client    *client.Client
-	Character *char.Character
+	Client     *client.Client
+	Characters []*types.Character
 }
 
-func (p *Player) ToOutbound() servmsg.PlayerPayload {
-	return servmsg.PlayerPayload{
+func (p *Player) ToOutbound() smsg.PlayerPayload {
+	return smsg.PlayerPayload{
 		Id:          p.Client.Id,
-		Character:   p.Character,
+		Characters:  p.Characters,
 		DisplayName: p.Client.Profile.DisplayName,
 	}
 }
@@ -53,8 +53,8 @@ func (m *Match) EnemyOf(p *Player) (*Player, error) {
 }
 
 func (m *Match) RandomPlayer() (*Player, error) {
-	if m.IsEmpty() || !m.IsFull() {
-		log.Printf(`Cannot get enemy of %v as match %v is not yet full.`, p.Client.Id, m.Id)
+	if !m.IsFull() {
+		log.Printf(`Cannot get random player as match %v is not yet full.`, m.Id)
 		return nil, errors.New(`Not enough players.`)
 	}
 
@@ -62,12 +62,11 @@ func (m *Match) RandomPlayer() (*Player, error) {
 	return m.Players[pIdx], nil
 }
 
-func (m *Match) ToOutbound() servmsg.MatchPayload {
+func (m *Match) ToOutbound() smsg.MatchPayload {
 	p1 := m.Players[0].ToOutbound()
 	p2 := m.Players[1].ToOutbound()
 
-
-	return servmsg.MatchPayload{
+	return smsg.MatchPayload{
 		Id:       m.Id,
 		Player1:  &p1,
 		Player2:  &p2,

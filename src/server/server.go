@@ -2,7 +2,8 @@ package srv
 
 import (
 	"game/src/client"
-	"game/src/msg/cmsg"
+	cmsg "game/src/messages/client_messages"
+	"game/src/types"
 	"log"
 	"net/http"
 )
@@ -21,7 +22,7 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	for !client.IsClosed() {
 
-		var m cmsg.Message
+		var m cmsg.MessageIn
 		err := ws.ReadJSON(&m)
 
 		if client.IsClosed() {
@@ -34,24 +35,24 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		client.ClientMessage <- &m
+		client.WriteMessage(&m)
 		client.ResetDeadlines()
 	}
 }
 
-func (s *Server) exhaustClientMessages(c *client.Client) {
-	for m := range c.ClientMessage {
+func (s *Server) exhaustClientMessages(c *types.GameConnection) {
+	for m := range c.ReadChannel() {
 		err := s.cmsgToHandler(c, *m)
 
 		if err != nil {
-			log.Printf("Could not handle message %v for client %v.\n\tError: %v", m, c.Id, err)
+			log.Printf("Could not handle message %v for client %v.\n\tError: %v", m, c.Id(), err)
 			c.Close()
 			return
 		}
 	}
 }
 
-func (s *Server) exhaustServerMessagesForClient(c *client.Client) {
+func (s *Server) exhaustServerMessagesForClient(c *types.GameConnection) {
 	for m := range c.ServerMessage {
 		err := c.Connection.WriteJSON(m)
 		if err != nil {
